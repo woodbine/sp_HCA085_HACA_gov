@@ -99,6 +99,23 @@ soup = BeautifulSoup(html, "lxml")
 
 #### SCRAPE DATA
 
+archive_link = soup.find(text=re.compile('The National Archives hold ')).find_next('a')['href']
+archive_page = urllib2.urlopen(archive_link)
+archive_soup = BeautifulSoup(archive_page, "lxml")
+archive_urls = archive_soup.find('div', 'taxonomy-term-description').find_all('a')
+for archive_url in archive_urls:
+    filecsv = archive_url['href']
+    namefile = archive_url.text.strip()
+    if 'xpenditure' in namefile:
+        namefile = namefile.replace(u'\xa0', ' ')
+        csvMth = namefile.split(' ')[2][:3]
+        csvYr = namefile.split(' ')[3]
+        if 'TSA' in namefile.split(' ')[0]:
+            csvMth = namefile.split(' ')[3][:3]
+            csvYr = namefile.split(' ')[4]
+        csvMth = convert_mth_strings(csvMth.upper())
+        data.append([csvYr, csvMth, filecsv])
+
 blocks = soup.find('div', 'govspeak').find_all('div', 'attachment-details')
 for block in blocks:
     title = block.find('h2', 'title').text.strip().split('-')[-1].strip().split(' ')

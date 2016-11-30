@@ -86,8 +86,11 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "HCA085_HACA_gov"
-url = "https://www.gov.uk/government/publications/hca-spend-for-transactions-over-500"
+urls = ["https://www.gov.uk/government/publications/hca-spend-for-transactions-over-500",
+       "https://www.gov.uk/government/publications/hca-spend-for-transactions-over-250-for-2015-to-2016",
+       "https://www.gov.uk/government/publications/hca-spend-for-transactions-over-250-for-2016-to-2017"]
 errors = 0
+url = "http://www.example.com"
 data = []
 
 
@@ -99,32 +102,17 @@ soup = BeautifulSoup(html, "lxml")
 
 #### SCRAPE DATA
 
-archive_link = soup.find(text=re.compile('The National Archives hold ')).find_next('a')['href']
-archive_page = urllib2.urlopen(archive_link)
-archive_soup = BeautifulSoup(archive_page, "lxml")
-archive_urls = archive_soup.find('div', 'taxonomy-term-description').find_all('a')
-for archive_url in archive_urls:
-    filecsv = archive_url['href']
-    namefile = archive_url.text.strip()
-    if 'xpenditure' in namefile:
-        namefile = namefile.replace(u'\xa0', ' ')
-        csvMth = namefile.split(' ')[2][:3]
-        csvYr = namefile.split(' ')[3]
-        if 'TSA' in namefile.split(' ')[0]:
-            csvMth = namefile.split(' ')[3][:3]
-            csvYr = namefile.split(' ')[4]
+for url in urls:
+    html = urllib2.urlopen(url)
+    soup = BeautifulSoup(html, "lxml")
+    blocks = soup.find('div', 'govspeak').find_all('div', 'attachment-details')
+    for block in blocks:
+        title = block.find('h2', 'title').text.strip().split('-')[-1].strip().split(' ')
+        url = 'https://www.gov.uk' + block.find('span', 'download').find('a')['href']
+        csvMth = title[0][:3]
+        csvYr = title[-1]
         csvMth = convert_mth_strings(csvMth.upper())
-        data.append([csvYr, csvMth, filecsv])
-
-blocks = soup.find('div', 'govspeak').find_all('div', 'attachment-details')
-for block in blocks:
-    title = block.find('h2', 'title').text.strip().split('-')[-1].strip().split(' ')
-    url = 'https://www.gov.uk'+block.find('span', 'download').find('a')['href']
-    csvMth = title[0][:3]
-    csvYr = title[-1]
-    csvMth = convert_mth_strings(csvMth.upper())
-    data.append([csvYr, csvMth, url])
-
+        data.append([csvYr, csvMth, url])
 
 #### STORE DATA 1.0
 
